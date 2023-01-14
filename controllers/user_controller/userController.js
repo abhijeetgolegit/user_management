@@ -7,12 +7,23 @@ const hasher = require("../hash/hash");
 const validator = require("validator");
 const activemail = require("../user_controller/ActiveMail");
 const { response } = require("../../app");
+const patternCheck = new RegExp(
+  "[a-z0-9]+@[zensar]+.[a-z]{2,3}",
+);
 async function addUser(request, response) {
   const User_ID = request.body.user_id;
   const User_Name = request.body.name;
   const Email = request.body.email;
+  const patternCheck = new RegExp(
+    "[a-z0-9]+@[zensar]+.[a-z]{2,3}",
+  );
   try {
     const users = await User.find();
+    if (!patternCheck.test(Email)) {
+      return response
+        .status(405)
+        .json({ err: "Enter Valid Email" });
+    }
     if (!User_ID || !User_Name || !Email) {
       return response
         .status(404)
@@ -115,10 +126,13 @@ async function getAllUsers(request, response) {
 
 async function updateUser(request, response) {
   try {
-    if (!validator.isEmail(request.body.email)) {
+    const patternCheck = new RegExp(
+      "[a-z0-9]+@[zensar]+.[a-z]{2,3}",
+    );
+    if (!patternCheck.test(request.body.email)) {
       return response
-        .status(403)
-        .json({ message: "Please Enter Valid Email" });
+        .status(405)
+        .json({ err: "Enter Valid Email" });
     }
     const filter = { user_id: request.params.ID };
     const updateUserDoc = {
@@ -219,21 +233,32 @@ async function search(req, response) {
     let perPage = 10;
     let dbConstraint1 = {};
     if (req.body.user_id) {
-      dbConstraint1.user_id = req.body.user_id;
+      dbConstraint1.user_id = {
+        $regex: req.body.user_id,
+        $options: "i",
+      };
     }
     if (req.body.name) {
-      dbConstraint1.name = req.body.name;
+      dbConstraint1.name = {
+        $regex: req.body.name,
+        $options: "i",
+      };
     }
     if (req.body.email) {
-      dbConstraint1.email = req.body.email;
+      dbConstraint1.email = {
+        $regex: req.body.email,
+        $options: "i",
+      };
     }
     if (req.body.is_active != null) {
       dbConstraint1.is_active = req.body.is_active;
     }
     let dbConstraint2 = {};
     if (req.body.user_id) {
-      dbConstraint2["user_roles.user_id"] =
-        req.body.user_id;
+      dbConstraint2["user_roles.user_id"] = {
+        $regex: req.body.user_id,
+        $options: "i",
+      };
     }
     if (req.body.role_id) {
       dbConstraint2["user_roles.role_id"] =
