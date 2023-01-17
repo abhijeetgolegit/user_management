@@ -229,114 +229,271 @@ async function getByID(req, response) {
 
 async function search(req, response) {
   try {
-    let currentPage = req.params.page || 1;
-    let perPage = 10;
-    let dbConstraint1 = {};
-    if (req.body.user_id) {
-      dbConstraint1.user_id = {
-        $regex: req.body.user_id,
-        $options: "i",
-      };
-    }
-    if (req.body.name) {
-      dbConstraint1.name = {
-        $regex: req.body.name,
-        $options: "i",
-      };
-    }
-    if (req.body.email) {
-      dbConstraint1.email = {
-        $regex: req.body.email,
-        $options: "i",
-      };
-    }
-    if (req.body.is_active != null) {
-      dbConstraint1.is_active = req.body.is_active;
-    }
-    let dbConstraint2 = {};
-    if (req.body.user_id) {
-      dbConstraint2["user_roles.user_id"] = {
-        $regex: req.body.user_id,
-        $options: "i",
-      };
-    }
-    if (req.body.role_id) {
-      dbConstraint2["user_roles.role_id"] =
-        req.body.role_id;
-    }
-    if (req.body.is_active) {
-      dbConstraint2["user_roles.is_active"] =
-        req.body.is_active;
-    }
-    let dbConstraint3 = {};
-    if (req.body.role_id) {
-      dbConstraint3["roles.role_id"] = req.body.role_id;
-    }
-    if (req.body.role_name) {
-      dbConstraint3["roles.role_name"] = req.body.role_name;
-    }
-    const totalrecords = await User.aggregate([
-      {
-        $lookup: {
-          from: "user_roles",
-          localField: "user_id",
-          foreignField: "user_id",
-          as: "user_roles",
+    let currentPage = req.body.page || 1;
+    let perPage = 10; // console.log("page : "+req.query.page+" id : "+req.query.user_id+" name : "+req.query.name+" email : "+req.query.email+" is_active : "+req.query.is_active);
+    if (
+      req.body.user_id ||
+      req.body.name ||
+      req.body.email ||
+      req.body.role_id
+    ) {
+      const totalrecords = await User.aggregate([
+        {
+          $lookup: {
+            from: "user_roles",
+            localField: "user_id",
+            foreignField: "user_id",
+            as: "user_roles",
+          },
         },
-      },
-      {
-        $lookup: {
-          from: "roles",
-          localField: "user_roles.role_id",
-          foreignField: "role_id",
-          as: "roles",
+        {
+          $lookup: {
+            from: "roles",
+            localField: "user_roles.role_id",
+            foreignField: "role_id",
+            as: "roles",
+          },
         },
-      },
-      {
-        $match: {
-          ...dbConstraint1,
-          ...dbConstraint2,
-          ...dbConstraint3,
+        {
+          $match: {
+            $or: [
+              {
+                name: {
+                  $regex: req.body.name || "-",
+                  $options: "i",
+                },
+              },
+              {
+                email: {
+                  $regex: req.body.email || "-",
+                  $options: "i",
+                },
+              },
+              {
+                user_id: {
+                  $regex: req.body.user_id || "-",
+                  $options: "i",
+                },
+              },
+              { "roles.role_id": req.body.role_id },
+              { "roles.role_name": req.body.role_name },
+            ],
+            is_active: req.body.is_active,
+          },
         },
-      },
-    ]);
-    const user = await User.aggregate([
-      {
-        $lookup: {
-          from: "user_roles",
-          localField: "user_id",
-          foreignField: "user_id",
-          as: "user_roles",
+      ]);
+      const user = await User.aggregate([
+        {
+          $lookup: {
+            from: "user_roles",
+            localField: "user_id",
+            foreignField: "user_id",
+            as: "user_roles",
+          },
         },
-      },
-      // {$unwind:"$user_roles"},
-      {
-        $lookup: {
-          from: "roles",
-          localField: "user_roles.role_id",
-          foreignField: "role_id",
-          as: "roles",
+        {
+          $lookup: {
+            from: "roles",
+            localField: "user_roles.role_id",
+            foreignField: "role_id",
+            as: "roles",
+          },
         },
-      },
-      // {$unwind:"$roles"},
-      {
-        $match: {
-          ...dbConstraint1,
-          ...dbConstraint2,
-          ...dbConstraint3,
+        {
+          $match: {
+            $or: [
+              {
+                name: {
+                  $regex: req.body.name || "-",
+                  $options: "i",
+                },
+              },
+              {
+                email: {
+                  $regex: req.body.email || "-",
+                  $options: "i",
+                },
+              },
+              {
+                user_id: {
+                  $regex: req.body.user_id || "-",
+                  $options: "i",
+                },
+              },
+              { "roles.role_id": req.body.role_id },
+              { "roles.role_name": req.body.role_name },
+            ],
+            is_active: req.body.is_active,
+          },
         },
-      },
-    ])
-      .skip((currentPage - 1) * perPage)
-      .limit(perPage);
-    response.status(200).send({
-      totalitems: totalrecords.length,
-      user: user,
-    });
+      ])
+        .skip((currentPage - 1) * perPage)
+        .limit(perPage);
+      response.status(200).send({
+        totalitems: totalrecords.length,
+        user: user,
+      });
+    } else {
+      const totalrecords = await User.aggregate([
+        {
+          $lookup: {
+            from: "user_roles",
+            localField: "user_id",
+            foreignField: "user_id",
+            as: "user_roles",
+          },
+        },
+        {
+          $lookup: {
+            from: "roles",
+            localField: "user_roles.role_id",
+            foreignField: "role_id",
+            as: "roles",
+          },
+        },
+        { $match: { is_active: req.body.is_active } },
+      ]);
+      const user = await User.aggregate([
+        {
+          $lookup: {
+            from: "user_roles",
+            localField: "user_id",
+            foreignField: "user_id",
+            as: "user_roles",
+          },
+        },
+        {
+          $lookup: {
+            from: "roles",
+            localField: "user_roles.role_id",
+            foreignField: "role_id",
+            as: "roles",
+          },
+        },
+        { $match: { is_active: req.body.is_active } },
+      ])
+        .skip((currentPage - 1) * perPage)
+        .limit(perPage);
+      response.status(200).send({
+        totalitems: totalrecords.length,
+        user: user,
+      });
+    }
   } catch (err) {
     response.status(500).json({ err: err.message });
   }
 }
+
+// async function search(req, response) {
+//   try {
+//     let currentPage = req.params.page || 1;
+//     let perPage = 10;
+//     let dbConstraint1 = {};
+//     if (req.body.user_id) {
+//       dbConstraint1.user_id = {
+//         $regex: req.body.user_id,
+//         $options: "i",
+//       };
+//     }
+//     if (req.body.name) {
+//       dbConstraint1.name = {
+//         $regex: req.body.name,
+//         $options: "i",
+//       };
+//     }
+//     if (req.body.email) {
+//       dbConstraint1.email = {
+//         $regex: req.body.email,
+//         $options: "i",
+//       };
+//     }
+//     if (req.body.is_active != null) {
+//       dbConstraint1.is_active = req.body.is_active;
+//     }
+//     let dbConstraint2 = {};
+//     if (req.body.user_id) {
+//       dbConstraint2["user_roles.user_id"] = {
+//         $regex: req.body.user_id,
+//         $options: "i",
+//       };
+//     }
+//     if (req.body.role_id) {
+//       dbConstraint2["user_roles.role_id"] =
+//         req.body.role_id;
+//     }
+//     if (req.body.is_active) {
+//       dbConstraint2["user_roles.is_active"] =
+//         req.body.is_active;
+//     }
+//     let dbConstraint3 = {};
+//     if (req.body.role_id) {
+//       dbConstraint3["roles.role_id"] = req.body.role_id;
+//     }
+//     if (req.body.role_name) {
+//       dbConstraint3["roles.role_name"] = req.body.role_name;
+//     }
+//     const totalrecords = await User.aggregate([
+//       {
+//         $lookup: {
+//           from: "user_roles",
+//           localField: "user_id",
+//           foreignField: "user_id",
+//           as: "user_roles",
+//         },
+//       },
+//       {
+//         $lookup: {
+//           from: "roles",
+//           localField: "user_roles.role_id",
+//           foreignField: "role_id",
+//           as: "roles",
+//         },
+//       },
+//       {
+//         $match: {
+//           ...dbConstraint1,
+//           ...dbConstraint2,
+//           ...dbConstraint3,
+//         },
+//       },
+//     ]);
+//     const user = await User.aggregate([
+//       {
+//         $lookup: {
+//           from: "user_roles",
+//           localField: "user_id",
+//           foreignField: "user_id",
+//           as: "user_roles",
+//         },
+//       },
+//       // {$unwind:"$user_roles"},
+//       {
+//         $lookup: {
+//           from: "roles",
+//           localField: "user_roles.role_id",
+//           foreignField: "role_id",
+//           as: "roles",
+//         },
+//       },
+//       // {$unwind:"$roles"},
+//       {
+//         $match: {
+//           ...dbConstraint1,
+//           ...dbConstraint2,
+//           ...dbConstraint3,
+//         },
+//       },
+//     ])
+//       .skip((currentPage - 1) * perPage)
+//       .limit(perPage);
+//     response.status(200).send({
+//       totalitems: totalrecords.length,
+//       user: user,
+//     });
+//   } catch (err) {
+//     response.status(500).json({ err: err.message });
+//   }
+// }
 
 async function updateIsActive(request, response) {
   try {
