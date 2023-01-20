@@ -1,6 +1,6 @@
  # syntax=docker/dockerfile:1
 FROM node:18-alpine
-WORKDIR /user_management
+WORKDIR .
 COPY . .
 RUN npm install
 CMD ["node", "app.js"]
