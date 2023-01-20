@@ -71,8 +71,8 @@ app.use("/logout", logoutRoute);
 //   }
 // }, 1 * 1000);
 
-app.listen(8080, (err) => {
-  console.log("server running... 8080");
+app.listen(8001, (err) => {
+  console.log("server running... 8001");
 });
 
 module.exports = app;
