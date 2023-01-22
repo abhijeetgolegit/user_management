@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "npx nodemon ./bin/www",
+    "start": "node ./bin/www",
     "devStart": "app.js",
     "test": "mocha tests/ --timeout 100000",
     "test_nyc": "nyc mocha tests/ --timeout 100000",
